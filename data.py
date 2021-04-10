@@ -12,7 +12,8 @@ import torch.nn.functional as F
 from tqdm import trange, tqdm
 
 
-def load_dataset(data_path, dataset_type, max_headline_len, max_para_len, max_num_para, cache, cache_dir):
+def load_dataset(data_path, dataset_type, max_headline_len, max_para_len, max_num_para, cache, cache_dir,
+                 max_articles = None):
     if cache:
         cache_file_name = "{}_{}_Lh{}_Lp{}_P{}.pt".format(
             data_path.stem, dataset_type, max_headline_len, max_para_len, max_num_para)
@@ -26,9 +27,16 @@ def load_dataset(data_path, dataset_type, max_headline_len, max_para_len, max_nu
     assert dataset_type in ['train', 'dev', 'test', 'debug']
 
     numpy_data = {}
-    numpy_data['c'] = np.load(data_path / "whole/{}/{}_title.npy".format(dataset_type, dataset_type))
-    numpy_data['r'] = np.load(data_path / "whole/{}/{}_body.npy".format(dataset_type , dataset_type))
-    numpy_data['y'] = np.load(data_path / "whole/{}/{}_label.npy".format(dataset_type , dataset_type))
+    if max_articles is not None:
+        numpy_data['c'] = np.load(data_path / "whole/{}/{}_title.npy".format(dataset_type, dataset_type))[:max_articles]
+        numpy_data['r'] = np.load(data_path / "whole/{}/{}_body.npy".format(dataset_type , dataset_type))[:max_articles]
+        numpy_data['y'] = np.load(data_path / "whole/{}/{}_label.npy".format(dataset_type , dataset_type))[:max_articles]
+    else:
+        numpy_data['c'] = np.load(data_path / "whole/{}/{}_title.npy".format(dataset_type, dataset_type))
+        numpy_data['r'] = np.load(data_path / "whole/{}/{}_body.npy".format(dataset_type, dataset_type))
+        numpy_data['y'] = np.load(data_path / "whole/{}/{}_label.npy".format(dataset_type, dataset_type))
+
+    print(numpy_data['c'].shape, numpy_data['r'].shape, numpy_data['y'].shape)
     with open(data_path / "whole/dic_mincutN.pkl", "rb") as f:
         voca = pickle.load(f, encoding='latin1')
         eop_voca = voca['<EOP>']
@@ -41,6 +49,7 @@ def load_dataset(data_path, dataset_type, max_headline_len, max_para_len, max_nu
         print("Caching dataset...")
         torch.save(dataset, cache_path)
         print(f"Caching done! Located at {cache_path}")
+
     return dataset
 
 

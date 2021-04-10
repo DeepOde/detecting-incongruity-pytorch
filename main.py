@@ -89,7 +89,7 @@ def train(model, train_data, val_data, args):
             optimizer.step()
             
             global_step += 1
-
+            print("globstep:", global_step)
             if global_step % val_eval_freq == 0:
                 # Evaluate on validation set
                 val_loss, val_acc, val_auc = evaluate(model, val_data)
@@ -151,7 +151,7 @@ def main():
     print("Loading train dataset...")
     train_dataset = data.load_dataset(args.data_dir, 'train', args.max_headline_len, 
                                       args.max_para_len, args.max_num_para, args.cache_dataset, 
-                                      args.cache_dir)
+                                      args.cache_dir, max_articles=500)
     print(f"Train dataset size: {len(train_dataset):9,}")
     print("Loading val dataset...")
     val_dataset = data.load_dataset(args.data_dir, 'dev', args.max_headline_len, 
@@ -181,7 +181,7 @@ def main():
     # Evaluate test
     if args.evaluate_test_after_train:
         print("Loading test dataset...")
-        test_dataset = data.load_dataset(args.data_dir, 'test', args.max_headline_len, 
+        test_dataset = data.load_dataset(args.data_dir, 'test', args.max_headline_len,
                                          args.max_para_len, args.max_num_para, args.cache_dataset, 
                                          args.cache_dir)
         print(f"Test dataset size: {len(test_dataset):9,}")
