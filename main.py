@@ -17,10 +17,12 @@ import data
 from model import AttnHrDualEncoderModel
 import utils
 
+import csv  # To write test results to a csv file.
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def evaluate(model, data):
+def evaluate(model, data, save_preds = False):
     model.eval()
 
     with torch.no_grad():
@@ -45,6 +47,24 @@ def evaluate(model, data):
 
         preds_all = torch.cat(preds_all)
         labels_all = torch.cat(labels_all)
+
+        if save_preds:
+            print("Saving predictions to 'test_preds.txt'...")
+            if device == 'cpu':
+                preds_all_np, labels_all_np = preds_all.numpy(), labels_all.numpy()
+            else:
+                preds_all_np, labels_all_np = preds_all.detach().cpu().numpy(), labels_all.detach().cpu().numpy()
+
+                print("Shapes:",preds_all_np.shape,labels_all_np.shape)
+
+                with open('test_preds.csv', 'w', newline='') as file:
+                    f = csv.writer(file, delimiter=',')
+
+                    for i in range(len(preds_all_np)):
+                        f.writerow([str(i), labels_all_np[i], preds_all_np[i]])
+                        
+                    
+                
 
         num_correct = torch.eq((preds_all > 0).int(), labels_all.int()).sum().item()
         num_total = len(preds_all)
@@ -151,7 +171,7 @@ def main():
     print("Loading train dataset...")
     train_dataset = data.load_dataset(args.data_dir, 'train', args.max_headline_len, 
                                       args.max_para_len, args.max_num_para, args.cache_dataset, 
-                                      args.cache_dir, max_articles=500)
+                                      args.cache_dir, max_articles=None)
     print(f"Train dataset size: {len(train_dataset):9,}")
     print("Loading val dataset...")
     val_dataset = data.load_dataset(args.data_dir, 'dev', args.max_headline_len, 
@@ -191,7 +211,7 @@ def main():
             model.load_state_dict(torch.load(utils.CHECKPOINT_SAVE_PATH))
             print(f"Loading done!")
 
-        _, test_acc, test_auc = evaluate(model, test_dataset)
+        _, test_acc, test_auc = evaluate(model, test_dataset, save_preds = True)
 
         print(f"TEST ACC: {test_acc:.4f} | TEST AUROC: {test_auc:.4f}")
 
